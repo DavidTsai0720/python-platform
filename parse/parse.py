@@ -1,5 +1,4 @@
 from string import Template
-from datetime import datetime
 from io import BytesIO
 from zipfile import ZipFile
 import logging
@@ -10,7 +9,13 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
-logging.basicConfig(filename='myapp.log', level=logging.INFO)
+logging.basicConfig(
+    filename="mylog.log",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filemode="w",
+    format="%(levelname)s %(asctime)s: %(message)s",
+)
 
 
 URL = "https://www.taifex.com.tw/cht/3/dlFutPrevious30DaysSalesData"
@@ -43,7 +48,7 @@ def _valid_date():
 
 
 def _save(date):
-    src = SRC.substitute({'date': date})
+    src = SRC.substitute({"date": date})
     with requests.get(src) as resp:
         _delay()
         if not resp.ok:
@@ -54,10 +59,10 @@ def _save(date):
 
 def run():
     for date in _valid_date():
-        filename = SAVEDIR + 'Daily_' + date + '.csv'
+        name = "Daily_" + date + ".csv"
+        filename = SAVEDIR + name
         if os.path.exists(filename):
-            current = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logging.info(f"this {date} has been exists. created: {current}")
+            logging.warning(f"{name} is exists.")
         else:
             _save(date)
 
