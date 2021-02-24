@@ -17,14 +17,7 @@ logging.basicConfig(
     format="%(levelname)s %(asctime)s: %(message)s",
 )
 
-
-URL = "https://www.taifex.com.tw/cht/3/dlFutPrevious30DaysSalesData"
 DATE = re.compile(r'\d{4}_\d{2}_\d{2}')
-KEY = "button7"
-SRC = Template(
-    "https://www.taifex.com.tw/file/taifex/Dailydownload/"
-    "DailydownloadCSV/Daily_$date.zip"
-)
 SAVEDIR = os.path.dirname(os.path.realpath(__file__)) + '/save/'
 SLEEP = 5
 
@@ -33,41 +26,50 @@ def _delay():
     time.sleep(SLEEP)
 
 
-def _valid_date():
-    with requests.get(URL) as resp:
-        _delay()
-        if not resp.ok:
-            return
-        soup = BeautifulSoup(resp.text, "html.parser")
-        links = soup.find_all(id=KEY)
+class MTX:
+
+    URL = "https://www.taifex.com.tw/cht/3/dlFutPrevious30DaysSalesData"
+    SRC = Template(
+        "https://www.taifex.com.tw/file/taifex/Dailydownload/"
+        "DailydownloadCSV/Daily_$date.zip"
+    )
+
+    def _valid_date(self):
+        links = []
+        with requests.get(self.URL) as resp:
+            _delay()
+            soup = BeautifulSoup(resp.text, "html.parser") if resp.ok else ""
+            links = soup.find_all(id="button7")
         for link in links:
             src = link.get(key="onclick")
             m = DATE.search(src)
             if m is not None:
                 yield m.group()
 
+    def _save(self, date):
+        src = self.SRC.substitute({"date": date})
+        with requests.get(src) as resp:
+            _delay()
+            if not resp.ok:
+                return False
+            with ZipFile(BytesIO(resp.content)) as z:
+                z.extractall(SAVEDIR)
+            return True
 
-def _save(date):
-    src = SRC.substitute({"date": date})
-    with requests.get(src) as resp:
-        _delay()
-        if not resp.ok:
-            return None
-        with ZipFile(BytesIO(resp.content)) as z:
-            z.extractall(SAVEDIR)
-
-
-def run():
-    for date in _valid_date():
-        name = "Daily_" + date + ".csv"
-        filename = SAVEDIR + name
-        if os.path.exists(filename):
-            logging.warning(f"{name} is exists.")
-        else:
-            _save(date)
+    def parse(self):
+        for date in self._valid_date():
+            name = "Daily_" + date + ".csv"
+            filename = SAVEDIR + name
+            if os.path.exists(filename):
+                logging.warning(f"{name} is exists.")
+            elif self._save(date):
+                logging.info(f"svae {name}.")
+            else:
+                logging.error(f"svae {name} error.")
 
 
 if __name__ == "__main__":
     if not os.path.exists(SAVEDIR):
         os.makedirs(SAVEDIR)
-    run()
+    mtx = MTX()
+    mtx.parse()
