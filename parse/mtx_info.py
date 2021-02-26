@@ -1,8 +1,6 @@
 from io import BytesIO
 from zipfile import ZipFile
-from collections import defaultdict
 from string import Template
-import json
 import os.path
 import re
 
@@ -11,14 +9,13 @@ from bs4 import BeautifulSoup
 
 from .config import Time, CURRENTDIR
 from .setting import logging
-from .base import AsynCrawler
 
-DATE = re.compile(r'\d{4}_\d{2}_\d{2}')
+DATE = re.compile(r"\d{4}_\d{2}_\d{2}")
 
 
 class MTX:
 
-    SAVEDIR = CURRENTDIR + 'mtx/'
+    SAVEDIR = CURRENTDIR + "mtx/"
     URL = "https://www.taifex.com.tw/cht/3/dlFutPrevious30DaysSalesData"
     SRC = Template(
         "https://www.taifex.com.tw/file/taifex/Dailydownload/"
@@ -51,43 +48,3 @@ class MTX:
                 continue
             self._save(date)
             Time.delay()
-
-
-class Code(AsynCrawler):
-
-    links = [
-        "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2",
-        "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4",
-    ]
-    timeout = 600
-    SAVEDIR = CURRENTDIR + '/code/'
-
-    def _save(self, fileName, info):
-        name = self.SAVEDIR + f'{fileName}'
-        with open(name, 'wb') as f:
-            f.write(json.dumps(info).encode())
-
-    def _handler(self, soup):
-        mymap = defaultdict(dict)
-        fileName = ""
-        for row in soup.find_all('tr'):
-            arr = [r.text for r in row.find_all('td')]
-            try:
-                CFICode = arr[5]
-                name = arr[0]
-                date = arr[2]
-                fileName = arr[3]
-            except IndexError:
-                msg = f'current arr is {arr}'
-                logging.error(msg)
-            except Exception as e:
-                msg = f'{e}\narr is {arr}'
-                logging.error(msg)
-            else:
-                mymap[CFICode][name] = date
-        self._save(fileName, mymap)
-
-    def run(self):
-        if not os.path.exists(self.SAVEDIR):
-            os.makedirs(self.SAVEDIR)
-        self._run(self.links)
