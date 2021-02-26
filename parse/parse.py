@@ -1,6 +1,7 @@
 from io import BytesIO
 from zipfile import ZipFile
 from collections import defaultdict
+from string import Template
 import json
 import os.path
 import re
@@ -8,7 +9,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from .config import Time, DownloadMTX, CURRENTDIR
+from .config import Time, CURRENTDIR
 from .setting import logging
 from .base import AsynCrawler
 
@@ -18,43 +19,38 @@ DATE = re.compile(r'\d{4}_\d{2}_\d{2}')
 class MTX:
 
     SAVEDIR = CURRENTDIR + 'mtx/'
+    URL = "https://www.taifex.com.tw/cht/3/dlFutPrevious30DaysSalesData"
+    SRC = Template(
+        "https://www.taifex.com.tw/file/taifex/Dailydownload/"
+        "DailydownloadCSV/Daily_$date.zip"
+    )
 
-    @classmethod
-    def _valid_dates(cls):
-        links = []
-        with requests.get(DownloadMTX.main()) as resp:
-            soup = BeautifulSoup(resp.text, "html.parser") if resp.ok else ""
-            links = soup.find_all(id="button7")
-        for link in links:
-            text = link.get(key="onclick")
-            m = DATE.search(text)
-            if m is not None:
-                yield m.group()
+    def _get_dates(self):
+        with requests.get(self.URL) as resp:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for link in soup.find_all(id="button7"):
+                text = link.get(key="onclick")
+                m = DATE.search(text)
+                if m is not None:
+                    yield m.group()
 
-    @classmethod
-    def _save(cls, date):
-        url = DownloadMTX.csv(date)
+    def _save(self, date):
+        url = self.SRC.substitute({"date": date})
         with requests.get(url) as resp:
-            Time.delay()
-            if not resp.ok:
-                return False
             with ZipFile(BytesIO(resp.content)) as z:
-                z.extractall(cls.SAVEDIR)
-            return True
+                z.extractall(self.SAVEDIR)
 
-    @classmethod
-    def parse(cls):
-        if not os.path.exists(cls.SAVEDIR):
-            os.makedirs(cls.SAVEDIR)
-        for date in cls._valid_dates():
+    def run(self):
+        if not os.path.exists(self.SAVEDIR):
+            os.makedirs(self.SAVEDIR)
+        for date in self._get_dates():
             name = "Daily_" + date + ".csv"
-            filename = cls.SAVEDIR + name
+            filename = self.SAVEDIR + name
             if os.path.exists(filename):
                 logging.warning(f"{name} is exists.")
-            elif cls._save(date):
-                logging.info(f"svae {name}.")
-            else:
-                logging.error(f"svae {name} error.")
+                continue
+            self._save(date)
+            Time.delay()
 
 
 class Code(AsynCrawler):
@@ -67,8 +63,6 @@ class Code(AsynCrawler):
     SAVEDIR = CURRENTDIR + '/code/'
 
     def _save(self, fileName, info):
-        if not os.path.exists(self.SAVEDIR):
-            os.makedirs(self.SAVEDIR)
         name = self.SAVEDIR + f'{fileName}'
         with open(name, 'wb') as f:
             f.write(json.dumps(info).encode())
@@ -94,4 +88,6 @@ class Code(AsynCrawler):
         self._save(fileName, mymap)
 
     def run(self):
+        if not os.path.exists(self.SAVEDIR):
+            os.makedirs(self.SAVEDIR)
         self._run(self.links)

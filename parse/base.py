@@ -25,7 +25,7 @@ class AsynCrawler(metaclass=abc.ABCMeta):
             await asyncio.gather(*tasks)
 
     async def _fetch(self, url, session):
-        logging.info(f'current url is {url}')
+        logging.info(f'url is {url}')
         async with session.get(url, headers=self.HEADERS, timeout=self.timeout) as resp:
             html = await resp.text()
             soup = BeautifulSoup(html, "html.parser")
