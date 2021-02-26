@@ -11,6 +11,7 @@ requests = "*"
 beautifulsoup4 = "*"
 lxml = "*"
 pandas = "*"
+aiohttp = "*"
 
 [requires]
 python_version = "3.8"
