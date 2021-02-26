@@ -9,10 +9,6 @@ from .base import AsynCrawler
 
 class Code(AsynCrawler):
 
-    links = [
-        "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2",
-        "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4",
-    ]
     timeout = 600
     SAVEDIR = os.path.join(CURRENTDIR, "code")
     VALIDCFI = re.compile(r"^(?:ESV|CEO|EDS|CBC)[A-Z]+$")
@@ -26,7 +22,8 @@ class Code(AsynCrawler):
     def is_valid_CFI(self, code):
         return self.VALIDCFI.match(code)
 
-    def _handler(self, soup):
+    def _handler(self, row):
+        soup = row["soup"]
         fileName = ""
         results = []
         for row in soup.find_all("tr"):
@@ -54,4 +51,7 @@ class Code(AsynCrawler):
     def run(self):
         if not os.path.exists(self.SAVEDIR):
             os.makedirs(self.SAVEDIR)
-        self._run(self.links)
+        self._run([
+            {"url": "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2"},
+            {"url": "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4"},
+        ])

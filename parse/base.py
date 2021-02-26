@@ -46,12 +46,13 @@ class AsynCrawler(metaclass=abc.ABCMeta):
             tasks.append(asyncio.create_task(self._delay(self.start, self.end)))
             await asyncio.gather(*tasks)
 
-    async def _fetch(self, url, session):
+    async def _fetch(self, row, session):
+        url = row["url"]
         logging.info(f'url is {url}')
         async with session.get(url, headers=self.HEADERS, timeout=self.timeout) as resp:
             html = await resp.text()
-            soup = BeautifulSoup(html, "html.parser")
-            self._handler(soup)
+            row["soup"] = BeautifulSoup(html, "html.parser")
+            self._handler(row)
 
     def _run(self, links):
         loop = asyncio.get_event_loop()
