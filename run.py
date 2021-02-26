@@ -1,4 +1,6 @@
-import parse
+from parse import *
 
 if __name__ == '__main__':
-    parse.MTX.parse()
+    MTX.parse()
+    c = Code()
+    c.run()

@@ -1,21 +1,23 @@
 from io import BytesIO
 from zipfile import ZipFile
+from collections import defaultdict
+import json
 import os.path
-import asyncio
 import re
 
 import requests
 from bs4 import BeautifulSoup
-from aiohttp import ClientSession
 
 from .config import Time, DownloadMTX, CURRENTDIR
 from .setting import logging
+from .base import AsynCrawler
 
 DATE = re.compile(r'\d{4}_\d{2}_\d{2}')
-SAVEDIR = CURRENTDIR + 'mtx/'
 
 
 class MTX:
+
+    SAVEDIR = CURRENTDIR + 'mtx/'
 
     @classmethod
     def _valid_dates(cls):
@@ -37,14 +39,16 @@ class MTX:
             if not resp.ok:
                 return False
             with ZipFile(BytesIO(resp.content)) as z:
-                z.extractall(SAVEDIR)
+                z.extractall(cls.SAVEDIR)
             return True
 
     @classmethod
     def parse(cls):
+        if not os.path.exists(cls.SAVEDIR):
+            os.makedirs(cls.SAVEDIR)
         for date in cls._valid_dates():
             name = "Daily_" + date + ".csv"
-            filename = SAVEDIR + name
+            filename = cls.SAVEDIR + name
             if os.path.exists(filename):
                 logging.warning(f"{name} is exists.")
             elif cls._save(date):
@@ -53,17 +57,41 @@ class MTX:
                 logging.error(f"svae {name} error.")
 
 
-async def main():
-    links = []
-    async with ClientSession() as session:
-        tasks = [asyncio.create_task(fetch(link, session)) for link in links]
-        await asyncio.gather(*tasks)
+class Code(AsynCrawler):
 
+    links = [
+        "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2",
+        "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4",
+    ]
+    timeout = 600
+    SAVEDIR = CURRENTDIR + '/code/'
 
-async def fetch(link, session):
-    async with session.get(link) as resp:
-        html = await resp.text()
-        soup = BeautifulSoup(html, "html.parser")
+    def _save(self, fileName, info):
+        if not os.path.exists(self.SAVEDIR):
+            os.makedirs(self.SAVEDIR)
+        name = self.SAVEDIR + f'{fileName}'
+        with open(name, 'wb') as f:
+            f.write(json.dumps(info).encode())
 
-# loop = asyncio.get_event_loop()  #建立事件迴圈(Event Loop)
-# loop.run_until_complete(main())  #執行協程(coroutine)
+    def _handler(self, soup):
+        mymap = defaultdict(dict)
+        fileName = ""
+        for row in soup.find_all('tr'):
+            arr = [r.text for r in row.find_all('td')]
+            try:
+                CFICode = arr[5]
+                name = arr[0]
+                date = arr[2]
+                fileName = arr[3]
+            except IndexError:
+                msg = f'current arr is {arr}'
+                logging.error(msg)
+            except Exception as e:
+                msg = f'{e}\narr is {arr}'
+                logging.error(msg)
+            else:
+                mymap[CFICode][name] = date
+        self._save(fileName, mymap)
+
+    def run(self):
+        self._run(self.links)

@@ -1,3 +1,3 @@
-from .parse import MTX
+from .parse import MTX, Code
 
-__all__ = ('MTX',)
+__all__ = ('MTX', 'Code')
