@@ -37,9 +37,9 @@ class Stock(AsynCrawler):
         try:
             return self._datum
         except AttributeError:
-            today = datetime.date.today()
-            self._today = datetime.date(today.year, today.month, 1)
-            return self._today
+            datum = datetime.date.today() - relativedelta(months=1)
+            self._datum = datetime.date(datum.year, datum.month, 1)
+            return self._datum
 
     @property
     def twse(self):
@@ -92,6 +92,15 @@ class Stock(AsynCrawler):
             }
             return self._dateFMT
 
+    def is_valid(self, file_name, date):
+        if date >= self.datum:
+            return True
+        if not os.path.exists(file_name):
+            return True
+        if os.path.getsize(file_name) < 3:
+            return True
+        return False
+
     def _generate_dates(self, row, name):
         code, date = row["code"], row["date"]
         path = os.path.join(self.savePath, code)
@@ -105,7 +114,7 @@ class Stock(AsynCrawler):
         dateFMT = self.dateFMT[name]
         while date <= self.datum:
             file_name = os.path.join(path, date.strftime("%Y-%m"))
-            if date == self.datum or not os.path.exists(file_name):
+            if self.is_valid(file_name, date):
                 url = template.substitute({"date": dateFMT(date), "code": code})
                 yield {
                     "url": url,
