@@ -42,7 +42,5 @@ class MTX:
         for date in self._get_dates():
             name = "Daily_" + date + ".csv"
             filename = self.SAVEDIR + name
-            if os.path.exists(filename):
-                continue
             self._save(date)
             Time.delay()

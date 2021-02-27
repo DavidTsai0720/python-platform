@@ -14,5 +14,5 @@ CLASSOBJ = {
 }
 
 if __name__ == '__main__':
-    obj = CLASSOBJ[args.get]
+    obj = CLASSOBJ[args.get]()
     obj.run()
