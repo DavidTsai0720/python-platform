@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 from argparse import ArgumentParser
 from datetime import datetime
 
@@ -6,6 +6,7 @@ import parse
 
 parser = ArgumentParser()
 parser.add_argument("--get", type=str, help="exec script")
+parser.add_argument("--data", type=str, help="exec script")
 args = parser.parse_args()
 CLASSOBJ = {
     "mtx": parse.MTX,
@@ -14,5 +15,9 @@ CLASSOBJ = {
 }
 
 if __name__ == '__main__':
-    obj = CLASSOBJ[args.get]()
-    obj.run()
+    if args.get:
+        obj = CLASSOBJ[args.get]()
+        obj.run()
+    if args.data:
+        obj = parse.MTXHelper()
+        obj.run()

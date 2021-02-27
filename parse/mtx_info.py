@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from io import BytesIO
 from zipfile import ZipFile
 from string import Template
