@@ -120,33 +120,6 @@ class Stock(AsynCrawler):
         for row in self.mymap[name]:
             yield from self._generate_dates(row, name)
 
-    def html_handle(self, soup):
-        for row in soup.find_all("tr"):
-            arr = [r.text for r in row.find_all("td")]
-            try:
-                yy, mm, dd = arr[0].split('/')
-                while not dd.isdigit():
-                    dd = dd[:-1]
-                yy, mm, dd = map(int, (yy, mm, dd))
-                date = datetime.date(yy+1911, mm, dd).strftime("%Y-%m-%d")
-                volumn = arr[1]
-                OPEN = arr[3]
-                HIGH = arr[4]
-                LOW = arr[5]
-                CLOSE = arr[6]
-            except Exception:
-                msg = f"current arr is {arr}"
-                logging.error(msg)
-            else:
-                yield {
-                    "date": date,
-                    "open": OPEN,
-                    "high": HIGH,
-                    "low": LOW,
-                    "close": CLOSE,
-                    "volumn": volumn
-                }
-
     @property
     def errorLog(self):
         try:
@@ -155,16 +128,49 @@ class Stock(AsynCrawler):
             self._errorLog = os.path.join(self.savePath, "other")
             return self._errorLog
 
-    def _handler(self, param: dict):
-        arr = tuple(self.html_handle(param["soup"]))
-        if len(arr) == 0:
-            with open(self.errorLog, "a") as f:
-                f.write(param["url"] + "\n")
-            logging.warning(param["url"] + " has no information ")
-            return
-        file_name = param["file_name"]
+    def _save(self, data, file_name):
         with open(file_name, "wb") as f:
-            f.write(json.dumps(arr).encode())
+            f.write(json.dumps(data).encode())
+
+    def _log_err(self, msg):
+        with open(self.errorLog, "a") as f:
+            f.write(msg+ "\n")
+        logging.warning(msg + " has no information ")
+
+    def _handler(self, param: dict):
+        data = []
+        for row in param["soup"].find_all("tr"):
+            info = [r.text for r in row.find_all("td")]
+            length = len(info)
+            if length < 7:
+                if length == 0:
+                    self._log_err(param["url"])
+                continue
+            try:
+                yy, mm, dd = info[0].split('/')
+                while not dd.isdigit():
+                    dd = dd[:-1]
+                yy, mm, dd = map(int, (yy, mm, dd))
+                date = datetime.date(yy+1911, mm, dd).strftime("%Y-%m-%d")
+                volumn = info[1]
+                OPEN = info[3]
+                HIGH = info[4]
+                LOW = info[5]
+                CLOSE = info[6]
+            except Exception:
+                msg = f"current arr is {info}"
+                logging.error(msg)
+            else:
+                data.append({
+                    "code": param["code"],
+                    "date": date,
+                    "open": OPEN,
+                    "high": HIGH,
+                    "low": LOW,
+                    "close": CLOSE,
+                    "volumn": volumn
+                })
+        self._save(data, param["file_name"])
 
     def run(self) -> None:
         twses = self._candidate(self.twse)
