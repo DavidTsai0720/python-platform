@@ -132,20 +132,10 @@ class Stock(AsynCrawler):
         with open(file_name, "wb") as f:
             f.write(json.dumps(data).encode())
 
-    def _log_err(self, msg):
-        with open(self.errorLog, "a") as f:
-            f.write(msg+ "\n")
-        logging.warning(msg + " has no information ")
-
     def _handler(self, param: dict):
         data = []
         for row in param["soup"].find_all("tr"):
             info = [r.text for r in row.find_all("td")]
-            length = len(info)
-            if length < 7:
-                if length == 0:
-                    self._log_err(param["url"])
-                continue
             try:
                 yy, mm, dd = info[0].split('/')
                 while not dd.isdigit():
@@ -157,9 +147,8 @@ class Stock(AsynCrawler):
                 HIGH = info[4]
                 LOW = info[5]
                 CLOSE = info[6]
-            except Exception:
-                msg = f"current arr is {info}"
-                logging.error(msg)
+            except Exception as e:
+                logging.error(e)
             else:
                 data.append({
                     "code": param["code"],

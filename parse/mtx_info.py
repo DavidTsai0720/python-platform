@@ -8,7 +8,6 @@ import requests
 from bs4 import BeautifulSoup
 
 from .config import Time, CURRENTDIR
-from .setting import logging
 
 DATE = re.compile(r"\d{4}_\d{2}_\d{2}")
 
@@ -44,7 +43,6 @@ class MTX:
             name = "Daily_" + date + ".csv"
             filename = self.SAVEDIR + name
             if os.path.exists(filename):
-                logging.warning(f"{name} is exists.")
                 continue
             self._save(date)
             Time.delay()
