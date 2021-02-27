@@ -5,5 +5,5 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt="%Y-%m-%d %H:%M:%S",
     filemode="w",
-    format="%(levelname)s %(asctime)s: %(message)s",
+    format="%(levelname)s %(asctime)s: %(message)s at %(pathname)s %(lineno)d",
 )

@@ -6,6 +6,7 @@ import json
 
 from .config import CURRENTDIR
 from .base import AsynCrawler
+from .setting import logging
 
 
 class Stock(AsynCrawler):
@@ -103,14 +104,14 @@ class Stock(AsynCrawler):
         template = self.template[name]
         dateFMT = self.dateFMT[name]
         while date <= self.datum:
-            fileName = os.path.join(path, date.strftime("%Y-%m"))
-            if date == self.datum or not os.path.exists(fileName):
+            file_name = os.path.join(path, date.strftime("%Y-%m"))
+            if date == self.datum or not os.path.exists(file_name):
                 url = template.substitute({"date": dateFMT(date), "code": code})
                 yield {
                     "url": url,
                     "date": date,
                     "code": code,
-                    "fileName": fileName,
+                    "file_name": file_name,
                     "name": name,
                 }
             date += relativedelta(months=1)
@@ -119,20 +120,63 @@ class Stock(AsynCrawler):
         for row in self.mymap[name]:
             yield from self._generate_dates(row, name)
 
-    def _handler(self):
-        return None
+    def html_handle(self, soup):
+        for row in soup.find_all("tr"):
+            arr = [r.text for r in row.find_all("td")]
+            try:
+                yy, mm, dd = arr[0].split('/')
+                while not dd.isdigit():
+                    dd = dd[:-1]
+                yy, mm, dd = map(int, (yy, mm, dd))
+                date = datetime.date(yy+1911, mm, dd).strftime("%Y-%m-%d")
+                volumn = arr[1]
+                OPEN = arr[3]
+                HIGH = arr[4]
+                LOW = arr[5]
+                CLOSE = arr[6]
+            except Exception:
+                msg = f"current arr is {arr}"
+                logging.error(msg)
+            else:
+                yield {
+                    "date": date,
+                    "open": OPEN,
+                    "high": HIGH,
+                    "low": LOW,
+                    "close": CLOSE,
+                    "volumn": volumn
+                }
 
-    def run(self):
+    @property
+    def errorLog(self):
+        try:
+            return self._errorLog
+        except AttributeError:
+            self._errorLog = os.path.join(self.savePath, "other")
+            return self._errorLog
+
+    def _handler(self, param: dict):
+        arr = tuple(self.html_handle(param["soup"]))
+        if len(arr) == 0:
+            with open(self.errorLog, "a") as f:
+                f.write(param["url"] + "\n")
+            logging.warning(param["url"] + " has no information ")
+            return
+        file_name = param["file_name"]
+        with open(file_name, "wb") as f:
+            f.write(json.dumps(arr).encode())
+
+    def run(self) -> None:
         twses = self._candidate(self.twse)
         tpexs = self._candidate(self.tpex)
-        links = []
+        params = []
         while twses or tpexs:
-            link1 = next(twses, None)
-            link2 = next(tpexs, None)
-            if link1 is None and link2 is None:
-                break
-            for link in (link1, link2):
-                if link is not None:
-                    links.append(link)
-            self._run(links)
-            links.clear()
+            param1 = next(twses, None)
+            param2 = next(tpexs, None)
+            for param in (param1, param2):
+                if param is not None:
+                    params.append(param)
+            if len(params) == 0:
+                return
+            self._run(params)
+            params.clear()

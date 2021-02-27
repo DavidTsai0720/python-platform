@@ -14,25 +14,24 @@ class Code(AsynCrawler):
     VALIDCFI = re.compile(r"^(?:ESV|CEO|EDS|CBC)[A-Z]+$")
     CODENAME = re.compile(r"\s")
 
-    def _save(self, fileName, info):
-        name = os.path.join(self.SAVEDIR, fileName)
+    def _save(self, file_name, info):
+        name = os.path.join(self.SAVEDIR, file_name)
         with open(name, "wb") as f:
             f.write(json.dumps(info).encode())
 
     def is_valid_CFI(self, code):
         return self.VALIDCFI.match(code)
 
-    def _handler(self, row):
-        soup = row["soup"]
-        fileName = ""
+    def _handler(self, param: dict):
+        file_name = ""
         results = []
-        for row in soup.find_all("tr"):
+        for row in param["soup"].find_all("tr"):
             arr = [r.text for r in row.find_all("td")]
             try:
                 CFICode = arr[5]
                 code, *name = self.CODENAME.split(arr[0])
                 date = arr[2]
-                fileName = arr[3]
+                file_name = arr[3]
             except IndexError:
                 msg = f"current arr is {arr}"
                 logging.error(msg)
@@ -46,7 +45,7 @@ class Code(AsynCrawler):
                         "name": ''.join(name),
                         "date": date,
                     })
-        self._save(fileName, results)
+        self._save(file_name, results)
 
     def run(self):
         if not os.path.exists(self.SAVEDIR):
