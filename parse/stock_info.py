@@ -175,12 +175,11 @@ class Stock(AsynCrawler):
         tpexs = self._candidate(self.tpex)
         params = []
         while twses or tpexs:
-            for _ in range(2):
-                param1 = next(twses, None)
-                param2 = next(tpexs, None)
-                for param in (param1, param2):
-                    if param is not None:
-                        params.append(param)
+            param1 = next(twses, None)
+            param2 = next(tpexs, None)
+            for param in (param1, param2):
+                if param is not None:
+                    params.append(param)
             if len(params) == 0:
                 return
             self._run(params)
