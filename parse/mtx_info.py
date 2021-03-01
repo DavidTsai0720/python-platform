@@ -14,7 +14,7 @@ DATE = re.compile(r"\d{4}_\d{2}_\d{2}")
 
 
 def log_dates(func):
-    mymap = []
+    mymap = {}
     name = os.path.join(CURRENTDIR, "dates")
     with open(name, "rb") as f:
         mymap = json.loads(f.read().decode())
