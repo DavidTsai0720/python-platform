@@ -92,16 +92,35 @@ class Stock(AsynCrawler):
             }
             return self._dateFMT
 
-    def is_valid(self, file_name, date):
-        if not os.path.exists(file_name):
+    @property
+    def traded_dates(self):
+        try:
+            return self._traded_dates
+        except AttributeError:
+            name = os.path.join(CURRENTDIR, "dates")
+            with open(name, "rb") as f:
+                mymap = json.loads(f.read().decode())
+            self._traded_dates = mymap
+            return self._traded_dates
+
+    def has_exists(self, name, date: datetime.date) -> bool:
+        with open(name, "rb") as f:
+            rows = json.loads(f.read().decode())
+        target = max(row["date"] for row in rows)
+        key = f"{date.year:04d}-{date.month:02d}"
+        datum = max(self.traded_dates[key]).replace("_", "-")
+        return target == datum
+
+    def is_valid(self, name, date: datetime.date) -> bool:
+        if not os.path.exists(name):
             return True
-        if os.path.getsize(file_name) < 3:
+        if os.path.getsize(name) < 3:
             return True
         if date >= self.datum - relativedelta(months=1):
-            return True
+            return not self.has_exists(name, date)
         return False
 
-    def _generate_dates(self, row, name):
+    def _generate_dates(self, row: dict, name):
         code, date = row["code"], row["date"]
         path = os.path.join(self.savePath, code)
         if not os.path.exists(path):
