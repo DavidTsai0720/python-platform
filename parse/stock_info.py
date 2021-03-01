@@ -37,7 +37,7 @@ class Stock(AsynCrawler):
         try:
             return self._datum
         except AttributeError:
-            datum = datetime.date.today() - relativedelta(months=1)
+            datum = datetime.date.today()
             self._datum = datetime.date(datum.year, datum.month, 1)
             return self._datum
 
@@ -93,11 +93,11 @@ class Stock(AsynCrawler):
             return self._dateFMT
 
     def is_valid(self, file_name, date):
-        if date >= self.datum:
-            return True
         if not os.path.exists(file_name):
             return True
         if os.path.getsize(file_name) < 3:
+            return True
+        if date >= self.datum - relativedelta(months=1):
             return True
         return False
 
