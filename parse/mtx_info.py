@@ -16,10 +16,13 @@ class MTX:
 
     SAVEDIR = CURRENTDIR + "mtx/"
     URL = "https://www.taifex.com.tw/cht/3/dlFutPrevious30DaysSalesData"
-    SRC = Template(
+    CSV = Template(
         "https://www.taifex.com.tw/file/taifex/Dailydownload/"
         "DailydownloadCSV/Daily_$date.zip"
     )
+    RPT = Template(
+        "https://www.taifex.com.tw/file/taifex/Dailydownload"
+        "/Dailydownload/Daily_$date.zip")
 
     def _get_dates(self):
         with requests.get(self.URL) as resp:
@@ -30,17 +33,23 @@ class MTX:
                 if m is not None:
                     yield m.group()
 
-    def _save(self, date):
-        url = self.SRC.substitute({"date": date})
+    def _save_csv(self, date):
+        url = self.CSV.substitute({"date": date})
         with requests.get(url) as resp:
             with ZipFile(BytesIO(resp.content)) as z:
                 z.extractall(self.SAVEDIR)
+
+    def _save_rpt(self, date):
+        url = self.RPT.substitute({"date": date})
+        with requests.get(url) as resp:
+            name = os.path.join(self.SAVEDIR, f"Daily_{date}.zip")
+            with open(name, "wb") as f:
+                f.write(BytesIO(resp.content).getvalue())
 
     def run(self):
         if not os.path.exists(self.SAVEDIR):
             os.makedirs(self.SAVEDIR)
         for date in self._get_dates():
-            name = "Daily_" + date + ".csv"
-            filename = self.SAVEDIR + name
-            self._save(date)
-            Time.delay()
+            for func in (self._save_csv, self._save_rpt):
+                func(date)
+                Time.delay()
