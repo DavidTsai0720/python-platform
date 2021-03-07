@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import json
 
@@ -49,7 +50,9 @@ class TDCC(AsynCrawler):
             return self._dates
 
     def _handler(self, param: dict):
-        data = []
+        info = []
+        date = self.to_date(param["date"])
+        code = param["code"]
         for row in param["soup"].find_all("tr"):
             arr = [r.text for r in row.find_all("td")]
             if len(arr) != 5:
@@ -59,15 +62,20 @@ class TDCC(AsynCrawler):
             people = arr[2]
             shares = arr[3]
             percentage = arr[4]
-            data.append({
+            info.append({
+                "code": code,
+                "date": date,
                 "order": order,
                 "level": level,
                 "people": people,
                 "shares": shares,
                 "percentage": percentage
             })
-        file_name = os.path.join(self.savePath, param["code"], param["date"])
-        self._save(file_name, data)
+        file_name = os.path.join(self.savePath, code, date)
+        self._save(file_name, info)
+    
+    def to_date(self, date):
+        return datetime.strptime(date, "%Y%m%d").strftime("%Y-%m-%d")
 
     @property
     def stockinfo(self):
@@ -90,7 +98,7 @@ class TDCC(AsynCrawler):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
             return False
-        file_name = os.path.join(dirname, date)
+        file_name = os.path.join(dirname, self.to_date(date))
         if not os.path.exists(file_name):
             return False
         if os.path.getsize(file_name) < 3:
@@ -135,3 +143,4 @@ class TDCC(AsynCrawler):
                 "code": code
             }
             self._run([param])
+            break
