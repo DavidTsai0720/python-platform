@@ -89,13 +89,13 @@ class TDCC(AsynCrawler):
         dirname = os.path.join(self.savePath, code)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-            return True
+            return False
         file_name = os.path.join(dirname, date)
         if not os.path.exists(file_name):
-            return True
+            return False
         if os.path.getsize(file_name) < 3:
-            return True
-        return False
+            return False
+        return True
 
     def _candidates(self):
         for date in self.dates:
@@ -105,7 +105,7 @@ class TDCC(AsynCrawler):
                     current, created = map(int, (date, created))
                     if current < created:
                         continue
-                    if not self.has_exists(stock["code"], date):
+                    if self.has_exists(stock["code"], date):
                         continue
                     yield {
                         "code": stock["code"],
