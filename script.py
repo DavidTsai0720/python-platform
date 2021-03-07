@@ -10,6 +10,7 @@ CLASSOBJ = {
     "mtx": parse.MTX,
     "stock": parse.Stock,
     "code": parse.Code,
+    "tdcc": parse.TDCC,
 }
 
 if __name__ == '__main__':

@@ -2,7 +2,8 @@ import os.path
 import time
 import random
 
-CURRENTDIR = os.path.dirname(os.path.realpath(__file__)) + '/save/'
+source = os.path.dirname(os.path.realpath(__file__))
+CURRENTDIR = os.path.join(source, "save")
 
 
 class Time:
