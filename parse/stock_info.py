@@ -175,6 +175,8 @@ class Stock(AsynCrawler):
                 HIGH = info[4]
                 LOW = info[5]
                 CLOSE = info[6]
+            except (IndexError, ValueError):
+                pass
             except Exception as e:
                 logging.error(e)
             else:
