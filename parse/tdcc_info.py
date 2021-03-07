@@ -48,10 +48,6 @@ class TDCC(AsynCrawler):
             self._dates = sorted(dates)
             return self._dates
 
-    def _save(self, file_name, arr):
-        with open(file_name, "wb") as f:
-            f.write(json.dumps(arr).encode())
-
     def _handler(self, param: dict):
         data = []
         for row in param["soup"].find_all("tr"):

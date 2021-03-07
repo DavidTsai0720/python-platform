@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import random
+import json
 
 from bs4 import BeautifulSoup
 from aiohttp import ClientSession
@@ -55,6 +56,10 @@ class AsynCrawler(metaclass=abc.ABCMeta):
             html = await resp.text()
             param["soup"] = BeautifulSoup(html, "html.parser")
             self._handler(param)
+
+    def _save(self, file_name, arr):
+        with open(file_name, "wb") as f:
+            f.write(json.dumps(arr).encode())
 
     def _run(self, params: list):
         """

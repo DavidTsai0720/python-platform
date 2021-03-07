@@ -1,4 +1,3 @@
-import json
 import os.path
 import re
 
@@ -13,11 +12,6 @@ class Code(AsynCrawler):
     SAVEDIR = os.path.join(CURRENTDIR, "code")
     VALIDCFI = re.compile(r"^(?:ESV|CEO|EDS|CBC)[A-Z]+$")
     CODENAME = re.compile(r"\s")
-
-    def _save(self, file_name, info):
-        name = os.path.join(self.SAVEDIR, file_name)
-        with open(name, "wb") as f:
-            f.write(json.dumps(info).encode())
 
     def is_valid_CFI(self, code):
         return self.VALIDCFI.match(code)
@@ -45,7 +39,8 @@ class Code(AsynCrawler):
                         "name": ''.join(name),
                         "date": date,
                     })
-        self._save(file_name, results)
+        name = os.path.join(self.SAVEDIR, file_name)
+        self._save(name, results)
 
     def run(self):
         if not os.path.exists(self.SAVEDIR):

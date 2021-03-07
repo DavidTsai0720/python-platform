@@ -156,10 +156,6 @@ class Stock(AsynCrawler):
             self._errorLog = os.path.join(self.savePath, "other")
             return self._errorLog
 
-    def _save(self, data, file_name):
-        with open(file_name, "wb") as f:
-            f.write(json.dumps(data).encode())
-
     def _handler(self, param: dict):
         data = []
         for row in param["soup"].find_all("tr"):
@@ -189,7 +185,7 @@ class Stock(AsynCrawler):
                     "close": CLOSE,
                     "volumn": volumn
                 })
-        self._save(data, param["file_name"])
+        self._save(param["file_name"], data)
 
     def run(self) -> None:
         twses = self._candidate(self.twse)
