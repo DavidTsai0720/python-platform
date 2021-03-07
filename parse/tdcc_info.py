@@ -143,4 +143,3 @@ class TDCC(AsynCrawler):
                 "code": code
             }
             self._run([param])
-            break
