@@ -37,7 +37,7 @@ def log_dates(func):
 
 class MTX:
 
-    SAVEDIR = CURRENTDIR + "mtx/"
+    SAVEDIR = os.path.join(CURRENTDIR, "mtx")
     URL = "https://www.taifex.com.tw/cht/3/dlFutPrevious30DaysSalesData"
     CSV = Template(
         "https://www.taifex.com.tw/file/taifex/Dailydownload/"
